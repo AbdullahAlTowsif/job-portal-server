@@ -3,7 +3,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config();
 const port = process.env.PORT || 3000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 app.use(cors());
@@ -31,11 +31,45 @@ async function run() {
 
     // jobs related apis
     const jobsCollection = client.db('jobPortal').collection('jobs');
+    const jobApplicationCollection = client.db('jobPortal').collection('job_applications');
 
     app.get('/jobs', async(req, res)=> {
         const cursor = jobsCollection.find();
         const result = await cursor.toArray();
         res.send(result);
+    })
+
+    app.get('/jobs/:id', async(req, res)=> {
+      const id = req.params.id;
+      const qurey = {_id: new ObjectId(id)}
+      const result = await jobsCollection.findOne(qurey);
+      res.send(result);
+    })
+
+    app.get('/job-application', async(req, res)=> {
+      const email = req.query.email;
+      const query = {applicant_email: email};
+      const result = await jobApplicationCollection.find(query).toArray();
+
+      // fokira way to aggregate data
+      for(const application of result){
+        console.log(application.job_id);
+        const query1 = {_id: new ObjectId(application.job_id)}
+        const job = await jobsCollection.findOne(query1);
+        if(job){
+          application.title = job.title;
+          application.location = job.location;
+          application.company = job.company;
+          application.company_logo = job.company_logo;
+        }
+      }
+      res.send(result);
+    })
+
+    app.post('/job-applications', async(req, res)=> {
+      const application = req.body;
+      const result =await jobApplicationCollection.insertOne(application);
+      res.send(result);
     })
 
   } finally {
