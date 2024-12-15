@@ -33,30 +33,36 @@ async function run() {
     const jobsCollection = client.db('jobPortal').collection('jobs');
     const jobApplicationCollection = client.db('jobPortal').collection('job_applications');
 
-    app.get('/jobs', async(req, res)=> {
-        const cursor = jobsCollection.find();
-        const result = await cursor.toArray();
-        res.send(result);
+    app.get('/jobs', async (req, res) => {
+      const cursor = jobsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
     })
 
-    app.get('/jobs/:id', async(req, res)=> {
+    app.get('/jobs/:id', async (req, res) => {
       const id = req.params.id;
-      const qurey = {_id: new ObjectId(id)}
+      const qurey = { _id: new ObjectId(id) }
       const result = await jobsCollection.findOne(qurey);
       res.send(result);
     })
 
-    app.get('/job-application', async(req, res)=> {
+    app.post('/jobs', async (req, res) => {
+      const newJob = req.body;
+      const result = await jobsCollection.insertOne(newJob);
+      res.send(result);
+    })
+
+    app.get('/job-application', async (req, res) => {
       const email = req.query.email;
-      const query = {applicant_email: email};
+      const query = { applicant_email: email };
       const result = await jobApplicationCollection.find(query).toArray();
 
       // fokira way to aggregate data
-      for(const application of result){
+      for (const application of result) {
         console.log(application.job_id);
-        const query1 = {_id: new ObjectId(application.job_id)}
+        const query1 = { _id: new ObjectId(application.job_id) }
         const job = await jobsCollection.findOne(query1);
-        if(job){
+        if (job) {
           application.title = job.title;
           application.location = job.location;
           application.company = job.company;
@@ -66,9 +72,9 @@ async function run() {
       res.send(result);
     })
 
-    app.post('/job-applications', async(req, res)=> {
+    app.post('/job-applications', async (req, res) => {
       const application = req.body;
-      const result =await jobApplicationCollection.insertOne(application);
+      const result = await jobApplicationCollection.insertOne(application);
       res.send(result);
     })
 
@@ -80,10 +86,10 @@ async function run() {
 run().catch(console.dir);
 
 
-app.get('/', (req, res)=> {
-    res.send('Job is falling from the sky!')
+app.get('/', (req, res) => {
+  res.send('Job is falling from the sky!')
 })
 
-app.listen(port, ()=> {
-    console.log(`Job is waiting on port ${port}`);
+app.listen(port, () => {
+  console.log(`Job is waiting on port ${port}`);
 })
